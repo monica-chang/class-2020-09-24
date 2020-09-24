@@ -28,8 +28,8 @@ sep_old <-
   select( -instructor_full_name, -course_section_code, -(grad:total)) %>%
   rename_with(~ str_replace(.x, "course_", "")) %>% 
   group_by(id, title, name, department) %>% 
-  summarize(u_grad = sum(u_grad), .groups = "drop") %>% 
-  filter(u_grad > 10)
+  summarize(u_grad_old = sum(u_grad), .groups = "drop") %>% 
+  filter(u_grad_old > 10)
 
 
 sep_new <- 
@@ -40,8 +40,8 @@ sep_new <-
   select( -instructor_full_name, -course_section_code, -(grad:total)) %>%
   rename_with(~ str_replace(.x, "course_", "")) %>% 
   group_by(id, title, name, department) %>% 
-  summarize(u_grad = sum(u_grad), .groups = "drop") %>% 
-  filter(u_grad > 10)
+  summarize(u_grad_new = sum(u_grad), .groups = "drop") %>% 
+  filter(u_grad_new > 10)
 ```
 
 ### Scene 1
@@ -50,9 +50,41 @@ sep_new <-
 
 a) Make a table using **gt** which shows the five courses with the biggest increase. Use the [How to make a table](https://davidkane9.github.io/PPBDS/tools.html#how-to-make-a-table) section of *The Primer*.
 
+```{r scene1a}
+sep_join <- inner_join(sep_old, sep_new, by = c("id", "department", "name", "title")) %>%
+  mutate(diff = u_grad_new - u_grad_old)
+  
+five_increase <- sep_join %>%
+  arrange(desc(diff)) %>%
+  head(5)
+
+five_increase %>% gt()
+```
+
 b) Make a table using **gt** which shows the five courses with the biggest decrease.
 
+```{r scene1b}
+five_decrease <- sep_join %>%
+  arrange(diff) %>%
+  head(5)
+
+five_decrease %>% gt()
+```
+
 c) Make a nice looking graphic which shows these 10 courses.
+
+```{r scene1c}
+
+rbind(five_decrease, five_increase) %>%
+  arrange(diff) %>%
+  ggplot(aes(x = reorder(title, diff), y = diff)) + 
+    geom_col() +
+    coord_flip() +
+    labs(title = "Courses with greatest increase and decrease in enrollment",
+         x = "Course title",
+         y = "Change in enrollment from 9/1 - 9/22")
+
+```
 
 d) Write down some thoughts about what might explain these increases and decreases. Or is it all just random? How would we know?
 
